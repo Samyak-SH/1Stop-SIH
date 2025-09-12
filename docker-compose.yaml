@@ -1,0 +1,30 @@
+# run docker-compose up -d redis to only run the redis service
+services:
+
+  server:
+    container_name: 1stop-server
+    build : ./server
+    image : 1stop-server
+    ports :
+      - "3000:3000"
+    env_file:
+      - ./server/.env
+    depends_on:
+      - 1stop-redis
+
+  1stop-redis:
+    container_name: 1stop-redis
+    image : redis
+    ports :
+      - "6379:6379"
+    volumes:
+      - 1stop-redis-volume:/data
+    networks:
+      - 1stop-networks
+
+networks:
+  1stop-networks:
+    driver: bridge
+
+volumes:
+  1stop-redis-volume: {}
