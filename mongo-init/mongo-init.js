@@ -4,16 +4,12 @@
 db = db.getSiblingDB("1Stop");
 
 // Create collections if they don't exist
-if (!db.getCollectionNames().includes("stops")) {
-  db.createCollection("stops");
-}
-if (!db.getCollectionNames().includes("routes")) {
-  db.createCollection("routes");
-}
+db.Stops.drop();
+db.Routes.drop();
 
-// Create 2dsphere index on 'location' for geospatial queries
-db.stops.createIndex({ location: "2dsphere" });
-db.routes.createIndex({ "stops.location": "2dsphere" });
+// Create collections
+db.createCollection("Stops");
+db.createCollection("Routes");
 
 const stops = [
   {
@@ -502,8 +498,6 @@ const stops = [
     ]
   }
 ]
-db.stops.insertMany(stops);
-
 const routes = [
     {
         "routeNumber": "210A",
@@ -996,5 +990,16 @@ const routes = [
         ]
     }
 ]
-db.routes.insertMany(routes);
-print("\n\n\n\nLoad successfull\n\n\n\n\n\n\n")
+
+
+const populateDB = async()=>{
+  await db.Stops.insertMany(stops);
+  await db.Routes.insertMany(routes);
+  await db.Stops.createIndex({ location: "2dsphere" });
+  await db.Routes.createIndex({ "stops.location": "2dsphere" });
+}
+
+populateDB().then(()=>{
+
+  print("\n\n\n\nLoad successfull\n\n\n\n\n\n\n")
+});
