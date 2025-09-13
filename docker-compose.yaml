@@ -12,6 +12,18 @@ services:
     depends_on:
       - 1stop-redis
 
+  1stop-mongo:
+    container_name: 1stop-mongo
+    image: mongo
+    ports:
+      - "2717:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=root
+    networks:
+      - 1stop-network
+    volumes:
+      - 1stop-mongo-volume:/data/db
   1stop-redis:
     container_name: 1stop-redis
     image : redis
@@ -20,11 +32,12 @@ services:
     volumes:
       - 1stop-redis-volume:/data
     networks:
-      - 1stop-networks
+      - 1stop-network
 
 networks:
-  1stop-networks:
+  1stop-network:
     driver: bridge
 
 volumes:
   1stop-redis-volume: {}
+  1stop-mongo-volume: {}

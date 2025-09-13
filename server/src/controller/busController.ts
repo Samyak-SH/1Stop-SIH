@@ -27,6 +27,18 @@ export async function checkStopDistance(req:Request, res:Response){
         res.status(200).json({distance : _distance})
     }
     catch(err){
+        res.status(500).json({message : "Internal server error, Failed to calculate distance"})
         console.error("Failed to calculate distance\n", err);
+    }
+}
+
+export async function getNextStop(req:Request, res:Response){
+    try{
+        
+    }
+    catch(err){
+        res.status(500).json({message : "Internal server error, Failed to get next stop"})
+        console.error("Failed to get next stop\n", err);
+
     }
 }
