@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { GCP_API_KEY } from "../config"
 import { coordinates } from "../types/bus";
+import {getNearestStopsModel} from "../model/busModel"
 
 export async function checkStopDistance(req:Request, res:Response){
     try{
@@ -32,13 +33,28 @@ export async function checkStopDistance(req:Request, res:Response){
     }
 }
 
-export async function getNextStop(req:Request, res:Response){
+export async function getNearestBusStops(req:Request, res:Response){
     try{
-        
-    }
-    catch(err){
-        res.status(500).json({message : "Internal server error, Failed to get next stop"})
-        console.error("Failed to get next stop\n", err);
+        const userCoordinates: coordinates = {
+            lat : req.body.userLat,
+            lon : req.body.userLon
+        }
+        const RANGE_IN_METER: number = 250;
 
+        if (
+            userCoordinates.lat === undefined ||
+            userCoordinates.lon === undefined
+        ) {
+            return res.status(400).json({ message: "Invalid input" });
+        }
+
+        const nearbyStops = await getNearestStopsModel(userCoordinates, RANGE_IN_METER);
+
+        res.status(200).json({ stops: nearbyStops });
+
+    }
+    catch(err:any){
+        console.error("Failed to get bus routes", err);
+        res.status(500).json({message : "Failed to get bus routes"});
     }
 }
