@@ -24,6 +24,7 @@ services:
       - 1stop-network
     volumes:
       - 1stop-mongo-volume:/data/db
+
   1stop-redis:
     container_name: 1stop-redis
     image : redis
