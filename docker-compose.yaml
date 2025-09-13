@@ -1,4 +1,4 @@
-# run docker-compose up -d redis to only run the redis service
+# run docker-compose up -d <service-name1> <service-name2> .... to run only selected services
 services:
 
   server:
