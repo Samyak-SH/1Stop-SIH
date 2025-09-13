@@ -36,7 +36,8 @@ export const app:Application = express();
 
 const delay = (ms:number) => new Promise((res) => setTimeout(res, ms));
 export async function startServer(){
-  console.log("mongodbURI" , MONGODB_URL);
+  console.log("MONGODB_URL" , MONGODB_URL);
+  console.log("REDIS_HOST", REDIS_HOST);
   let retries = 0;
 
   while (retries < MAX_START_RETRIES) {
