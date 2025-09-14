@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { GCP_API_KEY } from "../config"
 import { coordinates } from "../types/bus";
 import {getNearestStopsModel} from "../model/busModel"
+import { findRoute } from "../model/routeModel";
 
 export async function checkStopDistance(req:Request, res:Response){
     try{
@@ -56,5 +57,30 @@ export async function getNearestBusStops(req:Request, res:Response){
     catch(err:any){
         console.error("Failed to get bus routes", err);
         res.status(500).json({message : "Failed to get bus routes"});
+    }
+}
+
+export async function getNextBusStop(req:Request, res:Response){
+    try{
+        const routeNo: string = req.body.routeNO;
+        let currStopIndex: number = req.body.currStopIndex;
+        let nextStopIndex: number = req.body.nextStopIndex;
+    
+        const route = await findRoute(routeNo);
+        if(route.length<=0){
+            return res.status(200).json({message : "route not found"})
+        }
+
+        console.log("route", route);
+        if(currStopIndex < nextStopIndex){
+            currStopIndex = nextStopIndex;
+            nextStopIndex++; 
+        }
+        res.status(200).json({route: route});        
+
+    }
+    catch(err){
+        console.error("route not found", err);
+        res.status(500).json({message: "route not found"})
     }
 }
