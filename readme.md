@@ -45,8 +45,8 @@ A real-time bus tracking system that provides location-based services for findin
    ```env
    # Server Configuration
    SERVER_PORT=3000
-   MAX_START_RETRIES=3
-   START_RETRY_DELAY_MS=5000
+   MAX_START_RETRIES=10
+   START_RETRY_DELAY_MS=3000
    
    # Google Cloud API
    GCP_API_KEY=your_google_api_key_here
@@ -56,11 +56,11 @@ A real-time bus tracking system that provides location-based services for findin
    REDIS_PORT=6379
    
    # Rate Limiting
-   RATE_LIMIT=100
-   RATE_LIMIT_WINDOW_IN_SECONDS=3600
+   RATE_LIMIT=10
+   RATE_LIMIT_WINDOW_IN_SECONDS=10
    
    # MongoDB Configuration
-   MONGODB_URL=mongodb://localhost:27017/bus_tracking
+   MONGODB_URL=mongodb://root:root@localhost:2717/1Stop?authSource=admin
    ```
 
 4. **Start the services**
