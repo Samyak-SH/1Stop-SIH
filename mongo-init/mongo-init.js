@@ -501,6 +501,7 @@ const stops = [
 const routes = [
     {
         "routeNumber": "210A",
+        "routeType" : "C",
         "stops": [
             {
                 "index": 0,
@@ -770,6 +771,7 @@ const routes = [
     },
     {
         "routeNumber": "15G",
+        "routeType" : "UD",
         "stops": [
             {
                 "index": 0,

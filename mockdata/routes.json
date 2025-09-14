@@ -1,6 +1,7 @@
 [
     {
         "routeNumber": "210A",
+        "routeType" : "C",
         "stops": [
             {
                 "index": 0,
@@ -270,6 +271,7 @@
     },
     {
         "routeNumber": "15G",
+        "routeType" : "UD",
         "stops": [
             {
                 "index": 0,
