@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { GCP_API_KEY } from "../config"
 import { coordinates } from "../types/bus";
-import {getNearestStopsModel} from "../model/busModel"
+import {getNearestStopsModel, getCommonRoutesModel} from "../model/busModel"
 import { findRoute } from "../model/routeModel";
 import { redisClient } from "../util";
 
@@ -18,6 +18,7 @@ export async function trackBus(req:Request, res:Response){
         const _busID: string = req.body.busID;
         const _nextStopID: string = req.body.nextStopID;
         const _routeNo: string = req.body.routeNo;
+        const _crowdDensity: string = req.body.crowdDensity;
         // note : %2C translates to , (comma) in URL encoding
         const origin: string = `${busCoordinates.lat}%2C${busCoordinates.lon}`
         const destination: string = `${nextStopCoordinates.lat}%2C${busCoordinates.lon}`
@@ -36,6 +37,7 @@ export async function trackBus(req:Request, res:Response){
             routeNo: _routeNo,
             distance: _distance,
             duration: _duration,
+            crowdDensity : _crowdDensity,
         };
         await redisClient.hSet(`stops:${_nextStopID}`, _busID, JSON.stringify(busInfo));
         await redisClient.expire(`stops:${_nextStopID}`, 60) // expire after 60s
@@ -173,4 +175,21 @@ export async function getBusesForStop(req:Request, res:Response){
         res.status(500).json({ message: "Failed to fetch buses for stop" });
         console.error("Error fetching buses for stop", err);
     }
+}
+
+export async function getCommonRoutes(req: Request, res: Response) {
+  try {
+    const { sourceId, destinationId } = req.body;
+
+    if (!sourceId || !destinationId) {
+      return res.status(400).json({ error: "sourceId and destinationId are required" });
+    }
+
+    const commonRoutes = await getCommonRoutesModel(sourceId, destinationId);
+
+    return res.json({ commonRoutes }); // e.g. { "commonRoutes": ["R1", "R5", "R9"] }
+  } catch (err: any) {
+    console.error("Error in getCommonRoutes:", err);
+    return res.status(500).json({ error: err.message || "Internal Server Error" });
+  }
 }
