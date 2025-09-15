@@ -18,6 +18,7 @@ export async function trackBus(req:Request, res:Response){
         const _busID: string = req.body.busID;
         const _nextStopID: string = req.body.nextStopID;
         const _routeNo: string = req.body.routeNo;
+        const _crowdDensity: string = req.body.crowdDensity;
         // note : %2C translates to , (comma) in URL encoding
         const origin: string = `${busCoordinates.lat}%2C${busCoordinates.lon}`
         const destination: string = `${nextStopCoordinates.lat}%2C${busCoordinates.lon}`
@@ -36,6 +37,7 @@ export async function trackBus(req:Request, res:Response){
             routeNo: _routeNo,
             distance: _distance,
             duration: _duration,
+            crowdDensity : _crowdDensity,
         };
         await redisClient.hSet(`stops:${_nextStopID}`, _busID, JSON.stringify(busInfo));
         await redisClient.expire(`stops:${_nextStopID}`, 60) // expire after 60s
