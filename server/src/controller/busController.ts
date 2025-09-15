@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { GCP_API_KEY } from "../config"
 import { coordinates } from "../types/bus";
-import {getNearestStopsModel} from "../model/busModel"
+import {getNearestStopsModel, getCommonRoutesModel} from "../model/busModel"
 import { findRoute } from "../model/routeModel";
 import { redisClient } from "../util";
 
@@ -175,4 +175,21 @@ export async function getBusesForStop(req:Request, res:Response){
         res.status(500).json({ message: "Failed to fetch buses for stop" });
         console.error("Error fetching buses for stop", err);
     }
+}
+
+export async function getCommonRoutes(req: Request, res: Response) {
+  try {
+    const { sourceId, destinationId } = req.body;
+
+    if (!sourceId || !destinationId) {
+      return res.status(400).json({ error: "sourceId and destinationId are required" });
+    }
+
+    const commonRoutes = await getCommonRoutesModel(sourceId, destinationId);
+
+    return res.json({ commonRoutes }); // e.g. { "commonRoutes": ["R1", "R5", "R9"] }
+  } catch (err: any) {
+    console.error("Error in getCommonRoutes:", err);
+    return res.status(500).json({ error: err.message || "Internal Server Error" });
+  }
 }
