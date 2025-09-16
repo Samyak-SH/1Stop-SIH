@@ -5,53 +5,55 @@ import { getNearestStopsModel, getCommonRoutesModel } from "../model/busModel";
 import { findRoute } from "../model/routeModel";
 import { redisClient } from "../util";
 
-export async function trackBus(req: Request, res: Response) {
-  try {
-    const busCoordinates: coordinates = {
-      lat: req.body.busPositionLat,
-      lon: req.body.busPositionLon,
-    };
-    const nextStopCoordinates: coordinates = {
-      lat: req.body.nextStopLat,
-      lon: req.body.nextStopLon,
-    };
-    const _busID: string = req.body.busID;
-    const _nextStopID: string = req.body.nextStopID;
-    const _routeNo: string = req.body.routeNo;
-    const _crowdDensity: string = req.body.crowdDensity;
-    // note : %2C translates to , (comma) in URL encoding
-    const origin: string = `${busCoordinates.lat}%2C${busCoordinates.lon}`;
-    const destination: string = `${nextStopCoordinates.lat}%2C${busCoordinates.lon}`;
-    const url: string = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin}&destinations=${destination}&unit=metrics&key=${GCP_API_KEY}`;
+export async function trackBus(req:Request, res:Response){
+    try{
+      console.log("req ip", req.ip);
+        const busCoordinates:coordinates = {
+            lat : req.body.busPositionLat,
+            lon : req.body.busPositionLon
+        }
+        const nextStopCoordinates:coordinates = {
+            lat : req.body.nextStopLat,
+            lon : req.body.nextStopLon
+        }
+        const _busID: string = req.body.busID;
+        const _nextStopID: string = req.body.nextStopID;
+        const _routeNo: string = req.body.routeNo;
+        const _crowdDensity: string = req.body.crowdDensity;
+        console.log("Bus id", _busID);
+        console.log("route no", _routeNo);
+        console.log("next stopId", _nextStopID);
+        // note : %2C translates to , (comma) in URL encoding
+        const origin: string = `${busCoordinates.lat}%2C${busCoordinates.lon}`
+        const destination: string = `${nextStopCoordinates.lat}%2C${busCoordinates.lon}`
+        console.log("Origin", origin);
+        console.log("Desination", destination);
+        const url: string = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin}&destinations=${destination}&unit=metrics&key=${GCP_API_KEY}`
 
-    const response: any = await fetch(url);
-    const result: any = await response.json();
+        const response:any = await fetch(url);
+        const result:any = await response.json();
 
-    // console.log("distance fetched", result.rows[0].elements[0]);
+        // console.log("distance fetched", result.rows[0].elements[0]);
 
-    const _distance = result.rows[0].elements[0].distance.value; //in meters
-    const _duration = result.rows[0].elements[0].duration.value; //in seconds (extracted but not needed right now)
+        const _distance = result.rows[0].elements[0].distance.value; //in meters
+        const _duration = result.rows[0].elements[0].duration.value; //in seconds (extracted but not needed right now)
 
-    const busInfo = {
-      busId: _busID,
-      routeNo: _routeNo,
-      distance: _distance,
-      duration: _duration,
-      crowdDensity: _crowdDensity,
-    };
-    await redisClient.hSet(
-      `stops:${_nextStopID}`,
-      _busID,
-      JSON.stringify(busInfo)
-    );
-    await redisClient.expire(`stops:${_nextStopID}`, 60); // expire after 60s
-    res.status(200).json({ distance: _distance, duration: _duration });
-  } catch (err) {
-    res
-      .status(500)
-      .json({ message: "Internal server error, Failed to calculate distance" });
-    console.error("Failed to calculate distance\n", err);
-  }
+        const busInfo = {
+            busId: _busID,
+            routeNo: _routeNo,
+            distance: _distance,
+            duration: _duration,
+            crowdDensity : _crowdDensity,
+        };
+        await redisClient.hSet(`stops:${_nextStopID}`, _busID, JSON.stringify(busInfo));
+        await redisClient.expire(`stops:${_nextStopID}`, 60) // expire after 60s
+        console.log("distance", _distance, " duration", _duration);
+        res.status(200).json({distance : _distance, duration: _duration})
+    }
+    catch(err){
+        res.status(500).json({message : "Internal server error, Failed to calculate distance"})
+        console.error("Failed to calculate distance\n", err);
+    }
 }
 
 export async function getNearestBusStops(req: Request, res: Response) {
