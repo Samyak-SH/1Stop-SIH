@@ -21,11 +21,11 @@ app.get("/test", (req: Request, res: Response) => {
   res.json("server running");
 });
 app.post("/getNearestBustops", getNearestBusStops);
-app.post("/getNextStop", getNextStop);
 app.post("/getBusesForStop", getBusesForStop);
 app.post("/getCommonRoutes", getCommonRoutes);
-
 app.post("/trackBus", trackBus);
+
 app.get("/getRoute", getRoute);
+app.get("/getNextStop", getNextStop);
 
 startServer();
