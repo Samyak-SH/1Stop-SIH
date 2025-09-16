@@ -1,9 +1,4 @@
-import React, {
-  useEffect,
-  useRef,
-  forwardRef,
-  useImperativeHandle,
-} from "react";
+import { useEffect, useRef, forwardRef, useImperativeHandle } from "react";
 
 interface PlacesAutocompleteProps {
   onPlaceSelect: (place: google.maps.places.PlaceResult) => void;

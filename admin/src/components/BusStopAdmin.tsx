@@ -26,7 +26,6 @@ const BusStopAdmin: React.FC = () => {
     type: "success" | "error";
     text: string;
   } | null>(null);
-  const [mapInstance, setMapInstance] = useState<google.maps.Map | null>(null);
   const [mapLoading, setMapLoading] = useState(true);
 
   const autocompleteRef = useRef<PlacesAutocompleteRef>(null);
@@ -51,8 +50,7 @@ const BusStopAdmin: React.FC = () => {
     [stopName]
   );
 
-  const handleMapReady = useCallback((map: google.maps.Map) => {
-    setMapInstance(map);
+  const handleMapReady = useCallback(() => {
     setMapLoading(false);
   }, []);
 
@@ -90,7 +88,7 @@ const BusStopAdmin: React.FC = () => {
       console.log("Sending bus stop data:", busStop);
 
       const response = await fetch(
-        "https://cbc3adc0-98de-44b4-bfd6-7eebb6a7f3b4.mock.pstmn.io/api/stops",
+        "https://ca4e6fac-738f-430c-b5bf-9fc1658ecc03.mock.pstmn.io/api/stops",
         {
           method: "POST",
           headers: {
@@ -157,8 +155,15 @@ const BusStopAdmin: React.FC = () => {
     } catch (error) {
       console.error("Error saving bus stop:", error);
 
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error occurred";
+
       // Check if it's a network error
-      if (error.name === "TypeError" && error.message.includes("fetch")) {
+      if (
+        error instanceof Error &&
+        error.name === "TypeError" &&
+        error.message.includes("fetch")
+      ) {
         setMessage({
           type: "success",
           text: `Bus stop "${stopName}" would be saved successfully! (Demo Mode - Network Error)`,
@@ -167,7 +172,7 @@ const BusStopAdmin: React.FC = () => {
       } else {
         setMessage({
           type: "error",
-          text: `Failed to save bus stop: ${error.message}`,
+          text: `Failed to save bus stop: ${errorMessage}`,
         });
       }
     } finally {
@@ -187,12 +192,8 @@ const BusStopAdmin: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-full bg-gray-50 py-8">
       <div className="max-w-6xl mx-auto px-4">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8 text-center">
-          Bus Stop Admin Panel
-        </h1>
-
         <div className="bg-white rounded-lg shadow-lg p-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Form Section */}
