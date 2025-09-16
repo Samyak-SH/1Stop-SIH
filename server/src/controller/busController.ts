@@ -1,78 +1,84 @@
 import { Request, Response } from "express";
-import { GCP_API_KEY } from "../config"
+import { GCP_API_KEY } from "../config";
 import { coordinates } from "../types/bus";
-import {getNearestStopsModel, getCommonRoutesModel} from "../model/busModel"
+import { getNearestStopsModel, getCommonRoutesModel } from "../model/busModel";
 import { findRoute } from "../model/routeModel";
 import { redisClient } from "../util";
 
-export async function trackBus(req:Request, res:Response){
-    try{
-        const busCoordinates:coordinates = {
-            lat : req.body.busPositionLat,
-            lon : req.body.busPositionLon
-        }
-        const nextStopCoordinates:coordinates = {
-            lat : req.body.nextStopLat,
-            lon : req.body.nextStopLon
-        }
-        const _busID: string = req.body.busID;
-        const _nextStopID: string = req.body.nextStopID;
-        const _routeNo: string = req.body.routeNo;
-        const _crowdDensity: string = req.body.crowdDensity;
-        // note : %2C translates to , (comma) in URL encoding
-        const origin: string = `${busCoordinates.lat}%2C${busCoordinates.lon}`
-        const destination: string = `${nextStopCoordinates.lat}%2C${busCoordinates.lon}`
-        const url: string = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin}&destinations=${destination}&unit=metrics&key=${GCP_API_KEY}`
+export async function trackBus(req: Request, res: Response) {
+  try {
+    const busCoordinates: coordinates = {
+      lat: req.body.busPositionLat,
+      lon: req.body.busPositionLon,
+    };
+    const nextStopCoordinates: coordinates = {
+      lat: req.body.nextStopLat,
+      lon: req.body.nextStopLon,
+    };
+    const _busID: string = req.body.busID;
+    const _nextStopID: string = req.body.nextStopID;
+    const _routeNo: string = req.body.routeNo;
+    const _crowdDensity: string = req.body.crowdDensity;
+    // note : %2C translates to , (comma) in URL encoding
+    const origin: string = `${busCoordinates.lat}%2C${busCoordinates.lon}`;
+    const destination: string = `${nextStopCoordinates.lat}%2C${busCoordinates.lon}`;
+    const url: string = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin}&destinations=${destination}&unit=metrics&key=${GCP_API_KEY}`;
 
-        const response:any = await fetch(url);
-        const result:any = await response.json();
+    const response: any = await fetch(url);
+    const result: any = await response.json();
 
-        // console.log("distance fetched", result.rows[0].elements[0]);
+    // console.log("distance fetched", result.rows[0].elements[0]);
 
-        const _distance = result.rows[0].elements[0].distance.value; //in meters
-        const _duration = result.rows[0].elements[0].duration.value; //in seconds (extracted but not needed right now)
+    const _distance = result.rows[0].elements[0].distance.value; //in meters
+    const _duration = result.rows[0].elements[0].duration.value; //in seconds (extracted but not needed right now)
 
-        const busInfo = {
-            busId: _busID,
-            routeNo: _routeNo,
-            distance: _distance,
-            duration: _duration,
-            crowdDensity : _crowdDensity,
-        };
-        await redisClient.hSet(`stops:${_nextStopID}`, _busID, JSON.stringify(busInfo));
-        await redisClient.expire(`stops:${_nextStopID}`, 60) // expire after 60s
-        res.status(200).json({distance : _distance, duration: _duration})
-    }
-    catch(err){
-        res.status(500).json({message : "Internal server error, Failed to calculate distance"})
-        console.error("Failed to calculate distance\n", err);
-    }
+    const busInfo = {
+      busId: _busID,
+      routeNo: _routeNo,
+      distance: _distance,
+      duration: _duration,
+      crowdDensity: _crowdDensity,
+    };
+    await redisClient.hSet(
+      `stops:${_nextStopID}`,
+      _busID,
+      JSON.stringify(busInfo)
+    );
+    await redisClient.expire(`stops:${_nextStopID}`, 60); // expire after 60s
+    res.status(200).json({ distance: _distance, duration: _duration });
+  } catch (err) {
+    res
+      .status(500)
+      .json({ message: "Internal server error, Failed to calculate distance" });
+    console.error("Failed to calculate distance\n", err);
+  }
 }
 
-export async function getNearestBusStops(req:Request, res:Response){
-    try{
-        const userCoordinates: coordinates = {
-            lat : req.body.userLat,
-            lon : req.body.userLon
-        }
-        const RANGE_IN_METER: number = 250;
+export async function getNearestBusStops(req: Request, res: Response) {
+  try {
+    const userCoordinates: coordinates = {
+      lat: req.body.userLat,
+      lon: req.body.userLon,
+    };
+    const RANGE_IN_METER: number = 250;
 
-        if (
-            userCoordinates.lat === undefined ||
-            userCoordinates.lon === undefined
-        ) {
-            return res.status(400).json({ message: "Invalid input" });
-        }
-
-        const nearbyStops = await getNearestStopsModel(userCoordinates, RANGE_IN_METER);
-
-        res.status(200).json({ stops: nearbyStops });
-
+    if (
+      userCoordinates.lat === undefined ||
+      userCoordinates.lon === undefined
+    ) {
+      return res.status(400).json({ message: "Invalid input" });
     }
-    catch(err:any){
-        console.error("Failed to get bus routes", err);
-        res.status(500).json({message : "Failed to get bus routes"});
-    }
+
+    const nearbyStops = await getNearestStopsModel(
+      userCoordinates,
+      RANGE_IN_METER
+    );
+
+    res.status(200).json({ stops: nearbyStops });
+  } catch (err: any) {
+    console.error("Failed to get bus routes", err);
+    res.status(500).json({ message: "Failed to get bus routes" });
+  }
 }
 
 export async function getNextStop(req: Request, res: Response) {
@@ -83,7 +89,9 @@ export async function getNextStop(req: Request, res: Response) {
     const prevNextIndex = Number(req.body.nextStopIndex);
 
     if (!Number.isInteger(prevCurrIndex) || !Number.isInteger(prevNextIndex)) {
-      return res.status(400).json({ message: "currStopIndex and nextStopIndex must be integers" });
+      return res
+        .status(400)
+        .json({ message: "currStopIndex and nextStopIndex must be integers" });
     }
 
     // working copies
@@ -134,7 +142,11 @@ export async function getNextStop(req: Request, res: Response) {
       currStopIndex < 0 ||
       currStopIndex > stopCount - 1
     ) {
-      return res.status(400).json({ message: "calculated index out of range", nextStopIndex, currStopIndex });
+      return res.status(400).json({
+        message: "calculated index out of range",
+        nextStopIndex,
+        currStopIndex,
+      });
     }
 
     console.log("stops length", stopCount);
@@ -161,20 +173,20 @@ export async function getNextStop(req: Request, res: Response) {
   }
 }
 
-export async function getBusesForStop(req:Request, res:Response){
-    try {
-        const stopId = req.body.stopId;
-        const buses = await redisClient.hGetAll(`stops:${stopId}`);
-        console.log(buses);
+export async function getBusesForStop(req: Request, res: Response) {
+  try {
+    const stopId = req.body.stopId;
+    const buses = await redisClient.hGetAll(`stops:${stopId}`);
+    console.log(buses);
 
-        // Convert JSON strings back into objects
-        const result = Object.values(buses).map((b: string) => JSON.parse(b));
+    // Convert JSON strings back into objects
+    const result = Object.values(buses).map((b: string) => JSON.parse(b));
 
-        res.status(200).json(result);
-    } catch (err) {
-        res.status(500).json({ message: "Failed to fetch buses for stop" });
-        console.error("Error fetching buses for stop", err);
-    }
+    res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch buses for stop" });
+    console.error("Error fetching buses for stop", err);
+  }
 }
 
 export async function getCommonRoutes(req: Request, res: Response) {
@@ -182,7 +194,9 @@ export async function getCommonRoutes(req: Request, res: Response) {
     const { sourceId, destinationId } = req.body;
 
     if (!sourceId || !destinationId) {
-      return res.status(400).json({ error: "sourceId and destinationId are required" });
+      return res
+        .status(400)
+        .json({ error: "sourceId and destinationId are required" });
     }
 
     const commonRoutes = await getCommonRoutesModel(sourceId, destinationId);
@@ -190,6 +204,26 @@ export async function getCommonRoutes(req: Request, res: Response) {
     return res.json({ commonRoutes }); // e.g. { "commonRoutes": ["R1", "R5", "R9"] }
   } catch (err: any) {
     console.error("Error in getCommonRoutes:", err);
-    return res.status(500).json({ error: err.message || "Internal Server Error" });
+    return res
+      .status(500)
+      .json({ error: err.message || "Internal Server Error" });
+  }
+}
+
+export async function getRoute(req: Request, res: Response) {
+  try {
+    console.log("Get route called with params:", req.query);
+    const RouteId = req.query.RouteId?.toString();
+    if (!RouteId || typeof RouteId !== "string") {
+      return res.status(400).json({ message: "RouteId parameter is required" });
+    }
+    const route = await findRoute(RouteId);
+    if (!route) {
+      return res.status(404).json({ message: "Route not found" });
+    }
+    res.status(200).json(route);
+  } catch (err) {
+    console.error("Error fetching route:", err);
+    res.status(500).json({ message: "Internal Server Error" });
   }
 }
