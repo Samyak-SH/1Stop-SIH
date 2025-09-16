@@ -8,19 +8,31 @@ import {REDIS_HOST, REDIS_PORT, MAX_START_RETRIES, MONGODB_URL, SERVER_PORT, STA
 
 //this gives local/private ip assinged by the router, only useful when communicating with devices connected to the same network
 export async function getServerIP(): Promise<string> {
-    const nets = os.networkInterfaces();
-    let localIP = "127.0.0.1";
+  const nets = os.networkInterfaces();
+  let localIP = "127.0.0.1";
 
-    for (const name of Object.keys(nets)) {
-        for (const net of nets[name] || []) {
-            if (net.family === "IPv4" && !net.internal) {
-                localIP = net.address;
-                break;
-            }
+  for (const name of Object.keys(nets)) {
+    // Only look at Wi-Fi adapter
+    if (name.toLowerCase().includes("wi-fi")) {
+      for (const net of nets[name] || []) {
+        if (net.family === "IPv4" && !net.internal) {
+          localIP = net.address;
+          return localIP;
         }
+      }
     }
+  }
 
-    return localIP;
+  // fallback: pick the first IPv4 in the 10.x.x.x range
+  for (const name of Object.keys(nets)) {
+    for (const net of nets[name] || []) {
+      if (net.family === "IPv4" && !net.internal && net.address.startsWith("10.")) {
+        return net.address;
+      }
+    }
+  }
+
+  return localIP;
 }
 
 //redis client

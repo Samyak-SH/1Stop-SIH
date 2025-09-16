@@ -7,6 +7,7 @@ import { redisClient } from "../util";
 
 export async function trackBus(req:Request, res:Response){
     try{
+      console.log("req ip", req.ip);
         const busCoordinates:coordinates = {
             lat : req.body.busPositionLat,
             lon : req.body.busPositionLon
@@ -19,9 +20,14 @@ export async function trackBus(req:Request, res:Response){
         const _nextStopID: string = req.body.nextStopID;
         const _routeNo: string = req.body.routeNo;
         const _crowdDensity: string = req.body.crowdDensity;
+        console.log("Bus id", _busID);
+        console.log("route no", _routeNo);
+        console.log("next stopId", _nextStopID);
         // note : %2C translates to , (comma) in URL encoding
         const origin: string = `${busCoordinates.lat}%2C${busCoordinates.lon}`
         const destination: string = `${nextStopCoordinates.lat}%2C${busCoordinates.lon}`
+        console.log("Origin", origin);
+        console.log("Desination", destination);
         const url: string = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin}&destinations=${destination}&unit=metrics&key=${GCP_API_KEY}`
 
         const response:any = await fetch(url);
@@ -41,6 +47,7 @@ export async function trackBus(req:Request, res:Response){
         };
         await redisClient.hSet(`stops:${_nextStopID}`, _busID, JSON.stringify(busInfo));
         await redisClient.expire(`stops:${_nextStopID}`, 60) // expire after 60s
+        console.log("distance", _distance, " duration", _duration);
         res.status(200).json({distance : _distance, duration: _duration})
     }
     catch(err){
