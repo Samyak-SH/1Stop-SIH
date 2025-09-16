@@ -26,6 +26,6 @@ app.post("/getCommonRoutes", getCommonRoutes);
 app.post("/trackBus", trackBus);
 
 app.get("/getRoute", getRoute);
-app.get("/getNextStop", getNextStop);
+app.post("/getNextStop", getNextStop);
 
 startServer();
