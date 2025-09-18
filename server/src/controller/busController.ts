@@ -233,6 +233,7 @@ export async function getRoute(req: Request, res: Response) {
 
 export async function getAllStops(req:Request, res:Response){
   try{
+    console.log("req", req.ip);
     const result: any = await getAllStopModel();
     console.log(result);
     return res.status(200).json({result});

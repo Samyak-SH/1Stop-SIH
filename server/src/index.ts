@@ -1,6 +1,7 @@
 require("dotenv").config({ path: "./.env" });
 import express, { Request, Response } from "express";
 import { startServer, app } from "./util";
+import cors from "cors"
 import {
   trackBus,
   getNearestBusStops,
@@ -14,6 +15,7 @@ import { addNewRoute, addNewStop } from "./controller/routeController";
 import { rateLimiter } from "./middleware/rateLimiter";
 
 //middlewares
+app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(rateLimiter);
