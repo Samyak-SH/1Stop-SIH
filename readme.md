@@ -29,6 +29,8 @@ A real-time bus tracking system that provides location-based services for findin
 
 ## Installation
 
+### Backend Server Setup
+
 1. **Clone the repository**
    ```bash
    git clone <repository-url>
@@ -76,6 +78,17 @@ A real-time bus tracking system that provides location-based services for findin
    # Then run the application
    npm run dev
    ```
+
+### Android App (1Stop-app) Setup
+
+To set up and run the Android application:
+
+1. **Initialize and update git submodules**
+   ```bash
+   git submodule update --init --recursive
+   ```
+   
+   This will clone the `1Stop-SIH` repository and get the correct version of `1Stop-app`.
 
 ## API Documentation
 
