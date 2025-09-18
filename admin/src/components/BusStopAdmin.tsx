@@ -87,10 +87,8 @@ const BusStopAdmin: React.FC = () => {
     try {
       console.log("Sending bus stop data:", busStop);
 
-      const apiBaseUrl =
-        import.meta.env.VITE_API_BASE_URL ||
-        "https://ca4e6fac-738f-430c-b5bf-9fc1658ecc03.mock.pstmn.io";
-      const response = await fetch(`${apiBaseUrl}/api/stops`, {
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+      const response = await fetch(`${apiBaseUrl}/addNewStop`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
