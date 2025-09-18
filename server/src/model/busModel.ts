@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { coordinates } from "../types/bus";
+import { resourceUsage } from "process";
 
 const stopSchema = new mongoose.Schema({
   stopId: String,
@@ -61,4 +62,9 @@ export async function getCommonRoutesModel(sourceId: string, destinationId: stri
     console.log("common", common);
 
     return common;
+}
+
+export async function getAllStopModel(){
+    const result = await Stops.find({});
+    return result;
 }

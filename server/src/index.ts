@@ -8,6 +8,7 @@ import {
   getBusesForStop,
   getCommonRoutes,
   getRoute,
+  getAllStops,
 } from "./controller/busController";
 import { rateLimiter } from "./middleware/rateLimiter";
 
@@ -24,8 +25,9 @@ app.post("/getNearestBustops", getNearestBusStops);
 app.post("/getBusesForStop", getBusesForStop);
 app.post("/getCommonRoutes", getCommonRoutes);
 app.post("/trackBus", trackBus);
+app.post("/getNextStop", getNextStop);
 
 app.get("/getRoute", getRoute);
-app.post("/getNextStop", getNextStop);
+app.get("/getAllStops", getAllStops);
 
 startServer();

@@ -4,9 +4,9 @@
 #include <ArduinoJson.h>
 
 // WiFi config
-const char* ssid = "Airtel_SAMYAK";   // your WiFi SSID
-const char* password = "kitapati123"; // your WiFi password
-const char* serverURL = "http://192.168.1.5:3000";
+const char* ssid = "POCO X5 Pro 5G";   // your WiFi SSID
+const char* password = "password"; // your WiFi password
+const char* serverURL = "http://10.235.40.110:3000";
 
 WebServer server(80);
 
@@ -22,8 +22,10 @@ const char* busId = "abcde1230";
 unsigned short int currStopIndex = 0;
 unsigned short int nextStopIndex = 1;
 
-double startLat = 12.9718;
-double startLon = 77.5813;
+const char* nextStopId = "S1";
+
+double startLat = 12.9767;
+double startLon = 77.5732;
 
 double lat = startLat;
 double lon = startLon;
@@ -121,7 +123,7 @@ void handleRoot() {
       poly.addLatLng([data.lat, data.lon]);
       map.panTo([data.lat, data.lon]);
     }
-    setInterval(update, 200); 
+    setInterval(update, 500); 
   </script>
 </body>
 </html>
@@ -223,7 +225,7 @@ void loop() {
       trackPayload["nextStopLat"] = nextStopLat;
       trackPayload["nextStopLon"] = nextStopLon;
       trackPayload["busID"] = busId;
-      trackPayload["nextStopID"] = String(nextStopIndex);
+      trackPayload["nextStopId"] = nextStopId;
       trackPayload["routeNo"] = busRoute;
       trackPayload["crowdDensity"] = "LOW";
 
@@ -249,6 +251,7 @@ void loop() {
           nextStopIndex = nextStopResponse["nextStop"]["index"] | nextStopIndex;
           nextStopLat = nextStopResponse["nextStop"]["coordinates"][1] | nextStopLat;
           nextStopLon = nextStopResponse["nextStop"]["coordinates"][0] | nextStopLon;
+          nextStopId = nextStopResponse["nextStopId"] | nextStopId;
 
           Serial.println("Updated to Next Stop:");
           Serial.printf("   Curr Stop Index: %d\n", currStopIndex);
