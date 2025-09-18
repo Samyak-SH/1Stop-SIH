@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import { coordinates } from "../types/bus";
-import { resourceUsage } from "process";
+import { StopType } from "../types/stop";
 
 const stopSchema = new mongoose.Schema({
   stopId: String,
@@ -67,4 +67,8 @@ export async function getCommonRoutesModel(sourceId: string, destinationId: stri
 export async function getAllStopModel(){
     const result = await Stops.find({});
     return result;
+}
+
+export async function createStop(stop:StopType) {
+    await Stops.insertOne(stop);
 }
