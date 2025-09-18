@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { GCP_API_KEY } from "../config";
 import { coordinates } from "../types/bus";
-import { getNearestStopsModel, getCommonRoutesModel } from "../model/busModel";
+import { getNearestStopsModel, getCommonRoutesModel, getAllStopModel } from "../model/busModel";
 import { findRoute } from "../model/routeModel";
 import { redisClient } from "../util";
 
@@ -228,5 +228,16 @@ export async function getRoute(req: Request, res: Response) {
   } catch (err) {
     console.error("Error fetching route:", err);
     res.status(500).json({ message: "Internal Server Error" });
+  }
+}
+
+export async function getAllStops(req:Request, res:Response){
+  try{
+    const result: any = await getAllStopModel();
+    console.log(result);
+    return res.status(200).json({result});
+  }catch(err){
+    console.error("Failed to get all stops", err);
+    res.status(500).json({message : "Failed to get all stops"});
   }
 }
