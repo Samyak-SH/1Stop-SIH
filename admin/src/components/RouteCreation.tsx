@@ -92,16 +92,36 @@ const RouteCreation: React.FC = () => {
       const responseData = await response.json();
       console.log("API Response:", responseData);
 
-      // Handle the nested response structure: { success: true, data: [...] }
-      if (responseData.success && Array.isArray(responseData.data)) {
-        setStops(responseData.data);
+      // Handle different response formats
+      let stopsArray = [];
+
+      if (responseData.result && Array.isArray(responseData.result)) {
+        // Format: { result: [...] }
+        stopsArray = responseData.result;
+      } else if (responseData.success && Array.isArray(responseData.data)) {
+        // Format: { success: true, data: [...] }
+        stopsArray = responseData.data;
       } else if (Array.isArray(responseData)) {
-        // Fallback for direct array response
-        setStops(responseData);
+        // Direct array response
+        stopsArray = responseData;
       } else {
         console.error("Unexpected response format:", responseData);
         setStops([]);
+        return;
       }
+
+      // Transform the stops to match our interface
+      const transformedStops = stopsArray.map((stop: any) => ({
+        _id: stop._id,
+        stopId: stop.stopId,
+        name: stop.name,
+        location: {
+          type: stop.location.type,
+          coordinates: stop.location.coordinates,
+        },
+      }));
+
+      setStops(transformedStops);
     } catch (error) {
       console.error("Error fetching stops:", error);
       // Fallback to demo data
