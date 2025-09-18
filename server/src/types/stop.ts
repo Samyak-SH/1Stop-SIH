@@ -1,3 +1,5 @@
-interface Stop{
-    index: number
+export interface RouteType{
+    routeNumber : string,
+    routeType : string,
+    stops : [string],
 }
