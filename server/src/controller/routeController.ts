@@ -34,6 +34,7 @@ export async function addNewStop(req:Request, res:Response){
         }
         console.log("Stop type", s);
         await createStop(s);
+        res.status(200).json({message : "Added stop successfull"})
     }catch(err){
         console.error("Failed to add new stop", err);
         res.status(500).json({message : "Failed to add new stop"});
