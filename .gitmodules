@@ -1,0 +1,3 @@
+[submodule "1Stop-app"]
+	path = 1Stop-app
+	url = https://github.com/ayaxan7/Incompletion.git
