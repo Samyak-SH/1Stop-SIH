@@ -17,7 +17,7 @@ export async function trackBus(req:Request, res:Response){
             lon : req.body.nextStopLon
         }
         const _busID: string = req.body.busID;
-        const _nextStopID: string = req.body.nextStopID;
+        const _nextStopID: string = req.body.nextStopId;
         const _routeNo: string = req.body.routeNo;
         const _crowdDensity: string = req.body.crowdDensity;
         console.log("Bus id", _busID);
@@ -168,6 +168,7 @@ export async function getNextStop(req: Request, res: Response) {
         stopId: route.stops[currStopIndex].stopId,
         index: currStopIndex,
       },
+      nextStopId : route.stops[nextStopIndex].stopId
     });
   } catch (err) {
     console.error("route not found", err);
