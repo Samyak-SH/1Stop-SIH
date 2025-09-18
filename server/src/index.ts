@@ -1,5 +1,5 @@
 require("dotenv").config({ path: "./.env" });
-import express, { Request, Response } from "express";
+import express, { Request, Response, RequestHandler } from "express";
 import { startServer, app } from "./util";
 import {
   trackBus,
@@ -10,6 +10,7 @@ import {
   getRoute,
   getAllStops,
 } from "./controller/busController";
+import { addNewRoute } from "./controller/routeController";
 import { rateLimiter } from "./middleware/rateLimiter";
 
 //middlewares
@@ -26,6 +27,7 @@ app.post("/getBusesForStop", getBusesForStop);
 app.post("/getCommonRoutes", getCommonRoutes);
 app.post("/trackBus", trackBus);
 app.post("/getNextStop", getNextStop);
+app.post("/addNewRoute", addNewRoute);
 
 app.get("/getRoute", getRoute);
 app.get("/getAllStops", getAllStops);
