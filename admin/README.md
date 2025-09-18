@@ -19,7 +19,7 @@ A React + TypeScript + Vite application for managing bus stops with Google Maps 
 npm install
 ```
 
-### 2. Configure Google Maps API
+### 2. Configure Environment Variables
 
 1. Get a Google Maps API key from [Google Cloud Console](https://console.cloud.google.com/)
 2. Enable the following APIs:
@@ -29,13 +29,12 @@ npm install
 
 ```env
 VITE_GOOGLE_MAPS_API_KEY=your_google_maps_api_key_here
+VITE_API_BASE_URL=https://ca4e6fac-738f-430c-b5bf-9fc1658ecc03.mock.pstmn.io
 ```
 
 ### 3. Backend API
 
-The application is configured to use a mock API endpoint at:
-
-`https://a237fb13-bd0b-4a5a-a012-6b6a3b2f8aba.mock.pstmn.io`
+The application is configured to use a mock API endpoint. The base URL is configurable via the `VITE_API_BASE_URL` environment variable.
 
 **POST** `/api/stops`
 
@@ -108,9 +107,10 @@ interface BusStop {
 
 ## Environment Variables
 
-| Variable                   | Description         | Required |
-| -------------------------- | ------------------- | -------- |
-| `VITE_GOOGLE_MAPS_API_KEY` | Google Maps API key | Yes      |
+| Variable                   | Description          | Required |
+| -------------------------- | -------------------- | -------- |
+| `VITE_GOOGLE_MAPS_API_KEY` | Google Maps API key  | Yes      |
+| `VITE_API_BASE_URL`        | Backend API base URL | Yes      |
 
 ## Browser Support
 

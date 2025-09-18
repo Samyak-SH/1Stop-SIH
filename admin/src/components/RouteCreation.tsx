@@ -37,9 +37,10 @@ const RouteCreation: React.FC = () => {
   const fetchStops = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch(
-        "https://ca4e6fac-738f-430c-b5bf-9fc1658ecc03.mock.pstmn.io/api/stops"
-      );
+      const apiBaseUrl =
+        import.meta.env.VITE_API_BASE_URL ||
+        "https://ca4e6fac-738f-430c-b5bf-9fc1658ecc03.mock.pstmn.io";
+      const response = await fetch(`${apiBaseUrl}/api/stops`);
 
       if (!response.ok) {
         // Handle mock API issues gracefully
@@ -189,16 +190,16 @@ const RouteCreation: React.FC = () => {
     try {
       console.log("Saving route data:", routeData);
 
-      const response = await fetch(
-        "https://ca4e6fac-738f-430c-b5bf-9fc1658ecc03.mock.pstmn.io/api/routes",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(routeData),
-        }
-      );
+      const apiBaseUrl =
+        import.meta.env.VITE_API_BASE_URL ||
+        "https://ca4e6fac-738f-430c-b5bf-9fc1658ecc03.mock.pstmn.io";
+      const response = await fetch(`${apiBaseUrl}/api/routes`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(routeData),
+      });
 
       if (!response.ok) {
         // Handle mock API gracefully

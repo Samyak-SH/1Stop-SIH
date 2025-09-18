@@ -87,16 +87,16 @@ const BusStopAdmin: React.FC = () => {
     try {
       console.log("Sending bus stop data:", busStop);
 
-      const response = await fetch(
-        "https://ca4e6fac-738f-430c-b5bf-9fc1658ecc03.mock.pstmn.io/api/stops",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(busStop),
-        }
-      );
+      const apiBaseUrl =
+        import.meta.env.VITE_API_BASE_URL ||
+        "https://ca4e6fac-738f-430c-b5bf-9fc1658ecc03.mock.pstmn.io";
+      const response = await fetch(`${apiBaseUrl}/api/stops`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(busStop),
+      });
 
       console.log("Response status:", response.status);
       console.log(
@@ -128,7 +128,6 @@ const BusStopAdmin: React.FC = () => {
 
       let result = null;
       try {
-        // Check if response has content before trying to parse JSON
         const responseText = await response.text();
         console.log("Raw response text:", responseText);
 

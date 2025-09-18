@@ -63,7 +63,6 @@ const PlacesAutocomplete = forwardRef<
       }
     };
 
-    // Expose clearInput method through ref
     useImperativeHandle(ref, () => ({
       clearInput,
     }));
