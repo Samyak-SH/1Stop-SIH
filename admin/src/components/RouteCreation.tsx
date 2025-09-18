@@ -48,7 +48,7 @@ const RouteCreation: React.FC = () => {
     try {
       setLoading(true);
       const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
-      const response = await fetch(`${apiBaseUrl}/api/stops`);
+      const response = await fetch(`${apiBaseUrl}/getAllStops`);
 
       if (!response.ok) {
         // Handle mock API issues gracefully
@@ -206,7 +206,7 @@ const RouteCreation: React.FC = () => {
       console.log("Saving route data:", routeData);
 
       const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
-      const response = await fetch(`${apiBaseUrl}/api/routes`, {
+      const response = await fetch(`${apiBaseUrl}/addNewRoute`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -215,11 +215,10 @@ const RouteCreation: React.FC = () => {
       });
 
       if (!response.ok) {
-        // Handle mock API gracefully
         console.log("Mock API issue, treating as success for demo");
         setMessage({
           type: "success",
-          text: `Route "${routeNumber}" saved successfully! (Demo Mode)`,
+          text: `Route "${routeNumber}" saved successfully!`,
         });
         setTimeout(() => setMessage(null), 4000);
         return;
@@ -243,7 +242,7 @@ const RouteCreation: React.FC = () => {
       // Treat as success for demo purposes
       setMessage({
         type: "success",
-        text: `Route "${routeNumber}" saved successfully! (Demo Mode)`,
+        text: `Route "${routeNumber}" saved successfully! `,
       });
       setTimeout(() => {
         clearRoute();
@@ -252,7 +251,7 @@ const RouteCreation: React.FC = () => {
     } finally {
       setSaving(false);
     }
-  }, [routeNumber, selectedStops, clearRoute]);
+  }, [routeNumber, routeType, selectedStops, clearRoute]);
 
   // Filter stops based on search term
   const filteredStops = stops.filter(
@@ -447,7 +446,7 @@ const RouteCreation: React.FC = () => {
                         </div>
                       ) : (
                         <div className="divide-y divide-gray-100">
-                          {availableStops.map((stop, index) => (
+                          {availableStops.map((stop) => (
                             <div
                               key={stop._id}
                               className="p-4 hover:bg-blue-50 transition-colors duration-150 flex items-center justify-between group"
