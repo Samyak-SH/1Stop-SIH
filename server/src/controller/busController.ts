@@ -1,7 +1,11 @@
 import { Request, Response } from "express";
 import { GCP_API_KEY } from "../config";
 import { coordinates } from "../types/bus";
-import { getNearestStopsModel, getCommonRoutesModel, getAllStopModel } from "../model/busModel";
+import {
+  getNearestStopsModel,
+  getCommonRoutesModel,
+  getAllStopModel,
+} from "../model/busModel";
 import { findRoute } from "../model/routeModel";
 import { redisClient } from "../util";
 import { spawn } from "child_process";
@@ -71,7 +75,6 @@ export async function trackBus(req:Request, res:Response){
         res.status(500).json({message : "Internal server error, Failed to calculate distance"})
         console.error("Failed to calculate distance\n", err);
     }
-}
 
 export async function getNearestBusStops(req: Request, res: Response) {
   try {
@@ -185,7 +188,7 @@ export async function getNextStop(req: Request, res: Response) {
         stopId: route.stops[currStopIndex].stopId,
         index: currStopIndex,
       },
-      nextStopId : route.stops[nextStopIndex].stopId
+      nextStopId: route.stops[nextStopIndex].stopId,
     });
   } catch (err) {
     console.error("route not found", err);
@@ -219,7 +222,22 @@ export async function getCommonRoutes(req: Request, res: Response) {
         .json({ error: "sourceId and destinationId are required" });
     }
 
-    const commonRoutes = await getCommonRoutesModel(sourceId, destinationId);
+    let commonRoutes;
+    try {
+      const upperSourceId = sourceId.toUpperCase();
+      const upperDestinationId = destinationId.toUpperCase();
+      commonRoutes = await getCommonRoutesModel(
+        upperSourceId,
+        upperDestinationId
+      );
+    } catch (modelErr: any) {
+      console.error("Model error in getCommonRoutes:", modelErr);
+      return res.status(500).json({ error: "Failed to fetch common routes" });
+    }
+
+    if (!commonRoutes || !Array.isArray(commonRoutes)) {
+      return res.status(404).json({ error: "No common routes found" });
+    }
 
     return res.json({ commonRoutes }); // e.g. { "commonRoutes": ["R1", "R5", "R9"] }
   } catch (err: any) {
@@ -248,15 +266,15 @@ export async function getRoute(req: Request, res: Response) {
   }
 }
 
-export async function getAllStops(req:Request, res:Response){
-  try{
+export async function getAllStops(req: Request, res: Response) {
+  try {
     console.log("req", req.ip);
     const result: any = await getAllStopModel();
     console.log(result);
-    return res.status(200).json({result});
-  }catch(err){
+    return res.status(200).json({ result });
+  } catch (err) {
     console.error("Failed to get all stops", err);
-    res.status(500).json({message : "Failed to get all stops"});
+    res.status(500).json({ message: "Failed to get all stops" });
   }
 }
 
