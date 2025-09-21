@@ -4,6 +4,9 @@ import { coordinates } from "../types/bus";
 import { getNearestStopsModel, getCommonRoutesModel, getAllStopModel } from "../model/busModel";
 import { findRoute } from "../model/routeModel";
 import { redisClient } from "../util";
+import { spawn } from "child_process";
+import fs from "fs";
+import path from "path";
 
 export async function trackBus(req:Request, res:Response){
     try{
@@ -240,5 +243,44 @@ export async function getAllStops(req:Request, res:Response){
   }catch(err){
     console.error("Failed to get all stops", err);
     res.status(500).json({message : "Failed to get all stops"});
+  }
+}
+
+export async function calcCrowdDensity(req: Request, res: Response) {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: "No image uploaded" });
+    }
+
+    const tempPath = req.file.path; // Multer already saved the file
+    console.log("Received image at:", tempPath);
+
+    // Spawn Python process as before
+    const scriptPath = path.resolve(__dirname, "../../../AImodels/crowd_density.py");
+    const pyProcess = spawn("python", [scriptPath, tempPath]);
+
+    let output = "";
+    let errorOutput = "";
+
+    pyProcess.stdout.on("data", (data) => (output += data.toString()));
+    pyProcess.stderr.on("data", (data) => (errorOutput += data.toString()));
+
+    pyProcess.on("close", (code) => {
+      // Cleanup temp file
+      fs.unlinkSync(tempPath);
+
+      if (code !== 0) {
+        return res.status(500).json({ message: "Python script failed", error: errorOutput });
+      }
+
+      try {
+        const result = JSON.parse(output);
+        res.json(result);
+      } catch {
+        res.status(500).json({ message: "Failed to parse Python output", error: output });
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to process image", error: err });
   }
 }
