@@ -12,7 +12,9 @@ import {
   getCommonRoutes,
   getRoute,
   getAllStops,
-  calcCrowdDensity
+  calcCrowdDensity,
+  getAllActiveBuses,
+  getBusStat
 } from "./controller/busController";
 
 import { addNewRoute, addNewStop } from "./controller/routeController";
@@ -57,5 +59,7 @@ app.post("/calcCrowdDensity", upload.single("image"), calcCrowdDensity);
 
 app.get("/getRoute", getRoute);
 app.get("/getAllStops", getAllStops);
+app.get("/getAllActveBuses", getAllActiveBuses);
+app.get("/getBusStats", getBusStat);
 
 startServer();

@@ -48,8 +48,22 @@ export async function trackBus(req:Request, res:Response){
             duration: _duration,
             crowdDensity : _crowdDensity,
         };
+
+        const busInfoWithCoordinates = {
+          busId: _busID,
+          routeNo: _routeNo,
+          crowdDensity : _crowdDensity,
+          lat : req.body.busPositionLat,
+          lon : req.body.busPositionLon
+        }
+
+        // which bus is approaching which stop
         await redisClient.hSet(`stops:${_nextStopID}`, _busID, JSON.stringify(busInfo));
         await redisClient.expire(`stops:${_nextStopID}`, 60) // expire after 60s
+
+        //individual bus details
+        await redisClient.set(`buses:${_busID}`, JSON.stringify(busInfoWithCoordinates), { EX: 60 }); // expire after 60s
+
         console.log("distance", _distance, " duration", _duration);
         res.status(200).json({distance : _distance, duration: _duration})
     }
@@ -282,5 +296,51 @@ export async function calcCrowdDensity(req: Request, res: Response) {
     });
   } catch (err) {
     res.status(500).json({ message: "Failed to process image", error: err });
+  }
+}
+
+export async function getAllActiveBuses(req: Request, res: Response) {
+  try {
+    const keys = await redisClient.keys("buses:*");
+
+    if (!keys || keys.length === 0) {
+      return res.status(200).json({ buses: [] }); // no active buses
+    }
+
+    // Fetch details of all active buses
+    const busData = await redisClient.mGet(keys);
+
+    // Parse JSON values and filter out nulls (in case some expired during fetch)
+    const buses = busData
+      .filter((item) => item !== null)
+      .map((item) => JSON.parse(item as string));
+
+    res.status(200).json({ buses });
+  } catch (err) {
+    console.error("Failed to fetch active buses\n", err);
+    res.status(500).json({ message: "Internal server error, Failed to fetch buses" });
+  }
+}
+
+export async function getBusStat(req: Request, res: Response) {
+  try {
+    const { busId } = req.query;
+
+    if (!busId) {
+      return res.status(400).json({ message: "busId is required in params" });
+    }
+
+    const busData = await redisClient.get(`buses:${busId}`);
+
+    if (!busData) {
+      return res.status(404).json({ message: `No active data found for bus ${busId}` });
+    }
+
+    const busInfo = JSON.parse(busData);
+
+    res.status(200).json({ bus: busInfo });
+  } catch (err) {
+    console.error("Failed to fetch bus stats\n", err);
+    res.status(500).json({ message: "Internal server error, Failed to fetch bus stats" });
   }
 }
