@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import type { Theme } from "../App";
 
 interface Stop {
   _id: string;
@@ -30,7 +31,11 @@ interface RouteData {
   }[];
 }
 
-const RouteCreation: React.FC = () => {
+interface RouteCreationProps {
+  theme: Theme;
+}
+
+const RouteCreation: React.FC<RouteCreationProps> = ({ theme }) => {
   const [stops, setStops] = useState<Stop[]>([]);
   const [selectedStops, setSelectedStops] = useState<RouteStop[]>([]);
   const [routeNumber, setRouteNumber] = useState("");
@@ -286,11 +291,11 @@ const RouteCreation: React.FC = () => {
     .sort((a, b) => a.name.localeCompare(b.name));
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 py-8">
+    <div className="min-h-screen py-8 animate-slide-in-up relative">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2 animate-float">
             Route Management
           </h1>
           <p className="text-gray-600">
@@ -298,26 +303,28 @@ const RouteCreation: React.FC = () => {
           </p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+        <div className={`${theme.gradients.cardBackground} backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 overflow-hidden card-hover`}>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-0">
             {/* Left Column: Route Form */}
-            <div className="lg:col-span-1 p-8 bg-gray-50 border-r border-gray-200">
+            <div className="lg:col-span-1 p-8 bg-gradient-to-br from-gray-50/50 to-white/30 border-r border-gray-200/50">
               <div className="space-y-6">
                 <div>
                   <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
-                    <svg
-                      className="w-6 h-6 mr-2 text-purple-500"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4"
-                      />
-                    </svg>
+                    <div className={`w-8 h-8 ${theme.gradients.logo} rounded-lg flex items-center justify-center mr-3 animate-pulse-glow`}>
+                      <svg
+                        className="w-4 h-4 text-white"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4"
+                        />
+                      </svg>
+                    </div>
                     Create New Route
                   </h2>
 
@@ -333,7 +340,7 @@ const RouteCreation: React.FC = () => {
                     value={routeNumber}
                     onChange={(e) => setRouteNumber(e.target.value)}
                     placeholder="e.g., 210A, Blue Line"
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all duration-200 bg-white shadow-sm hover:border-gray-300"
+                    className={`w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 ${theme.gradients.inputFocus} outline-none transition-all duration-200 bg-white shadow-sm hover:border-gray-300 input-enhanced focus-ring`}
                   />
                 </div>
 
@@ -348,7 +355,7 @@ const RouteCreation: React.FC = () => {
                     id="routeType"
                     value={routeType}
                     onChange={(e) => setRouteType(e.target.value as "UD" | "C")}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all duration-200 bg-white shadow-sm hover:border-gray-300"
+                    className={`w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 ${theme.gradients.inputFocus} outline-none transition-all duration-200 bg-white shadow-sm hover:border-gray-300 input-enhanced focus-ring`}
                   >
                     <option value="UD">Up-Down (UD)</option>
                     <option value="C">Circular (C)</option>
@@ -409,7 +416,7 @@ const RouteCreation: React.FC = () => {
                         placeholder="Search stops by name or ID..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all duration-200 bg-white shadow-sm hover:border-gray-300"
+                        className={`w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 ${theme.gradients.inputFocus} outline-none transition-all duration-200 bg-white shadow-sm hover:border-gray-300 input-enhanced focus-ring`}
                       />
                     </div>
                   </div>
@@ -494,7 +501,7 @@ const RouteCreation: React.FC = () => {
                               </div>
                               <button
                                 onClick={() => addStopToRoute(stop)}
-                                className="ml-3 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transform hover:scale-105 transition-all duration-150 shadow-sm hover:shadow-md"
+                                className={`ml-3 px-4 py-2 ${theme.gradients.buttonPrimary} text-white text-sm font-medium rounded-lg transform hover:scale-105 transition-all duration-150 shadow-sm hover:shadow-md`}
                               >
                                 Add
                               </button>
@@ -615,7 +622,7 @@ const RouteCreation: React.FC = () => {
                             className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 hover:shadow-md transition-all duration-200 group"
                           >
                             <div className="flex items-center space-x-4">
-                              <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-lg">
+                              <div className={`flex-shrink-0 w-10 h-10 ${theme.gradients.logo} text-white rounded-full flex items-center justify-center text-sm font-bold shadow-lg`}>
                                 {index + 1}
                               </div>
                               <div>
@@ -673,7 +680,7 @@ const RouteCreation: React.FC = () => {
                     disabled={
                       saving || !routeNumber.trim() || selectedStops.length < 2
                     }
-                    className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-4 px-6 rounded-xl hover:from-green-700 hover:to-emerald-700 disabled:from-gray-400 disabled:to-gray-400 disabled:cursor-not-allowed transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:transform-none text-lg"
+                    className={`w-full ${theme.gradients.buttonPrimary} text-white py-4 px-6 rounded-xl disabled:from-gray-400 disabled:to-gray-400 disabled:cursor-not-allowed transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:transform-none text-lg btn-hover-lift`}
                   >
                     {saving ? (
                       <div className="flex items-center justify-center">
