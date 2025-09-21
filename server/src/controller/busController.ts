@@ -8,62 +8,73 @@ import {
 } from "../model/busModel";
 import { findRoute } from "../model/routeModel";
 import { redisClient } from "../util";
+import { spawn } from "child_process";
+import fs from "fs";
+import path from "path";
 
-export async function trackBus(req: Request, res: Response) {
-  try {
-    console.log("req ip", req.ip);
-    const busCoordinates: coordinates = {
-      lat: req.body.busPositionLat,
-      lon: req.body.busPositionLon,
-    };
-    const nextStopCoordinates: coordinates = {
-      lat: req.body.nextStopLat,
-      lon: req.body.nextStopLon,
-    };
-    const _busID: string = req.body.busID;
-    const _nextStopID: string = req.body.nextStopId;
-    const _routeNo: string = req.body.routeNo;
-    const _crowdDensity: string = req.body.crowdDensity;
-    console.log("Bus id", _busID);
-    console.log("route no", _routeNo);
-    console.log("next stopId", _nextStopID);
-    // note : %2C translates to , (comma) in URL encoding
-    const origin: string = `${busCoordinates.lat}%2C${busCoordinates.lon}`;
-    const destination: string = `${nextStopCoordinates.lat}%2C${busCoordinates.lon}`;
-    console.log("Origin", origin);
-    console.log("Desination", destination);
-    const url: string = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin}&destinations=${destination}&unit=metrics&key=${GCP_API_KEY}`;
+export async function trackBus(req:Request, res:Response){
+    try{
+      console.log("req ip", req.ip);
+        const busCoordinates:coordinates = {
+            lat : req.body.busPositionLat,
+            lon : req.body.busPositionLon
+        }
+        const nextStopCoordinates:coordinates = {
+            lat : req.body.nextStopLat,
+            lon : req.body.nextStopLon
+        }
+        const _busID: string = req.body.busID;
+        const _nextStopID: string = req.body.nextStopId;
+        const _routeNo: string = req.body.routeNo;
+        const _crowdDensity: string = req.body.crowdDensity;
+        console.log("Bus id", _busID);
+        console.log("route no", _routeNo);
+        console.log("next stopId", _nextStopID);
+        // note : %2C translates to , (comma) in URL encoding
+        const origin: string = `${busCoordinates.lat}%2C${busCoordinates.lon}`
+        const destination: string = `${nextStopCoordinates.lat}%2C${busCoordinates.lon}`
+        console.log("Origin", origin);
+        console.log("Desination", destination);
+        const url: string = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin}&destinations=${destination}&unit=metrics&key=${GCP_API_KEY}`
 
-    const response: any = await fetch(url);
-    const result: any = await response.json();
+        const response:any = await fetch(url);
+        const result:any = await response.json();
 
-    // console.log("distance fetched", result.rows[0].elements[0]);
+        // console.log("distance fetched", result.rows[0].elements[0]);
 
-    const _distance = result.rows[0].elements[0].distance.value; //in meters
-    const _duration = result.rows[0].elements[0].duration.value; //in seconds (extracted but not needed right now)
+        const _distance = result.rows[0].elements[0].distance.value; //in meters
+        const _duration = result.rows[0].elements[0].duration.value; //in seconds (extracted but not needed right now)
 
-    const busInfo = {
-      busId: _busID,
-      routeNo: _routeNo,
-      distance: _distance,
-      duration: _duration,
-      crowdDensity: _crowdDensity,
-    };
-    await redisClient.hSet(
-      `stops:${_nextStopID}`,
-      _busID,
-      JSON.stringify(busInfo)
-    );
-    await redisClient.expire(`stops:${_nextStopID}`, 60); // expire after 60s
-    console.log("distance", _distance, " duration", _duration);
-    res.status(200).json({ distance: _distance, duration: _duration });
-  } catch (err) {
-    res
-      .status(500)
-      .json({ message: "Internal server error, Failed to calculate distance" });
-    console.error("Failed to calculate distance\n", err);
-  }
-}
+        const busInfo = {
+            busId: _busID,
+            routeNo: _routeNo,
+            distance: _distance,
+            duration: _duration,
+            crowdDensity : _crowdDensity,
+        };
+
+        const busInfoWithCoordinates = {
+          busId: _busID,
+          routeNo: _routeNo,
+          crowdDensity : _crowdDensity,
+          lat : req.body.busPositionLat,
+          lon : req.body.busPositionLon
+        }
+
+        // which bus is approaching which stop
+        await redisClient.hSet(`stops:${_nextStopID}`, _busID, JSON.stringify(busInfo));
+        await redisClient.expire(`stops:${_nextStopID}`, 60) // expire after 60s
+
+        //individual bus details
+        await redisClient.set(`buses:${_busID}`, JSON.stringify(busInfoWithCoordinates), { EX: 60 }); // expire after 60s
+
+        console.log("distance", _distance, " duration", _duration);
+        res.status(200).json({distance : _distance, duration: _duration})
+    }
+    catch(err){
+        res.status(500).json({message : "Internal server error, Failed to calculate distance"})
+        console.error("Failed to calculate distance\n", err);
+    }
 
 export async function getNearestBusStops(req: Request, res: Response) {
   try {
@@ -264,5 +275,90 @@ export async function getAllStops(req: Request, res: Response) {
   } catch (err) {
     console.error("Failed to get all stops", err);
     res.status(500).json({ message: "Failed to get all stops" });
+  }
+}
+
+export async function calcCrowdDensity(req: Request, res: Response) {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: "No image uploaded" });
+    }
+
+    const tempPath = req.file.path; // Multer already saved the file
+    console.log("Received image at:", tempPath);
+
+    // Spawn Python process as before
+    const scriptPath = path.resolve(__dirname, "../../../AImodels/crowd_density.py");
+    const pyProcess = spawn("python", [scriptPath, tempPath]);
+
+    let output = "";
+    let errorOutput = "";
+
+    pyProcess.stdout.on("data", (data) => (output += data.toString()));
+    pyProcess.stderr.on("data", (data) => (errorOutput += data.toString()));
+
+    pyProcess.on("close", (code) => {
+      // Cleanup temp file
+      fs.unlinkSync(tempPath);
+
+      if (code !== 0) {
+        return res.status(500).json({ message: "Python script failed", error: errorOutput });
+      }
+
+      try {
+        const result = JSON.parse(output);
+        res.json(result);
+      } catch {
+        res.status(500).json({ message: "Failed to parse Python output", error: output });
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to process image", error: err });
+  }
+}
+
+export async function getAllActiveBuses(req: Request, res: Response) {
+  try {
+    const keys = await redisClient.keys("buses:*");
+
+    if (!keys || keys.length === 0) {
+      return res.status(200).json({ buses: [] }); // no active buses
+    }
+
+    // Fetch details of all active buses
+    const busData = await redisClient.mGet(keys);
+
+    // Parse JSON values and filter out nulls (in case some expired during fetch)
+    const buses = busData
+      .filter((item) => item !== null)
+      .map((item) => JSON.parse(item as string));
+
+    res.status(200).json({ buses });
+  } catch (err) {
+    console.error("Failed to fetch active buses\n", err);
+    res.status(500).json({ message: "Internal server error, Failed to fetch buses" });
+  }
+}
+
+export async function getBusStat(req: Request, res: Response) {
+  try {
+    const { busId } = req.query;
+
+    if (!busId) {
+      return res.status(400).json({ message: "busId is required in params" });
+    }
+
+    const busData = await redisClient.get(`buses:${busId}`);
+
+    if (!busData) {
+      return res.status(404).json({ message: `No active data found for bus ${busId}` });
+    }
+
+    const busInfo = JSON.parse(busData);
+
+    res.status(200).json({ bus: busInfo });
+  } catch (err) {
+    console.error("Failed to fetch bus stats\n", err);
+    res.status(500).json({ message: "Internal server error, Failed to fetch bus stats" });
   }
 }

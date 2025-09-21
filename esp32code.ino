@@ -4,9 +4,9 @@
 #include <ArduinoJson.h>
 
 // WiFi config
-const char* ssid = "POCO X5 Pro 5G";   // your WiFi SSID
-const char* password = "password"; // your WiFi password
-const char* serverURL = "http://10.235.40.110:3000";
+const char* ssid = "<your SSID>"; 
+const char* password = "<your password>"; 
+const char* serverURL = "<your server base url>";
 
 WebServer server(80);
 
