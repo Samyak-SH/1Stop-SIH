@@ -1,0 +1,962 @@
+{
+    "name": "My workflow 2",
+    "nodes": [
+        {
+            "parameters": {
+                "hasOutputParser": true,
+                "needsFallback": true,
+                "messages": {
+                    "messageValues": [
+                        {
+                            "type": "AIMessagePromptTemplate",
+                            "message": "=You are an expert AI assistant for a bus tracking service. Your sole purpose is to analyze user text and convert it into a specific JSON format that our system can understand. You must follow these rules strictly:\n\n1. **ALWAYS** respond with **ONLY** a valid JSON object. Do not add any introductory text, explanations, or markdown formatting like ```json. Your entire response must be the raw JSON.\n\n2. Map the user's query to one of the following intents: `nearest_stops`, `buses_for_stop`, `next_stop`, `track_bus`, `routes_between_stops`, or `unknown` if it doesn't fit.\n\n3. **In the `params` object, the JSON key MUST BE the actual parameter name required by the API. The value MUST BE the data extracted from the user's query.** If no parameters are found, return an empty `params` object.\n\n4. Based on the identified intent, generate a simple, user-facing confirmation message and place it in the `reply` field.\n\n**Parameter Mapping for Each Intent:**\n- **nearest_stops**: Extract `userLat` and `userLon` (use defaults 12.9716, 77.5946 if not provided), or `location` if a place name is mentioned\n- **buses_for_stop**: Extract `stopId` from user input\n- **next_stop**: Extract `routeNO`, `currStopIndex`, `nextStopIndex` (use reasonable defaults if not all provided)\n- **track_bus**: Extract `busPositionLat`, `busPositionLon`, `nextStopLat`, `nextStopLon`, `busID`, `nextStopID`, `routeNo`\n- **routes_between_stops**: Extract `fromStopId` and `toStopId` from user input\n\n**Intent Classification Rules:**\n- **buses_for_stop**: User asks about buses AT/TO/FOR a specific stop (e.g., \"buses at stop X\", \"which buses come to stop Y\", \"buses for stop Z\", \"nearest bus to stop X\")\n- **nearest_stops**: User asks about finding nearby stops without specifying a stop ID (e.g., \"stops near me\", \"closest stops\", \"find stops\", \"stops near [location]\")\n- **next_stop**: User asks about the next stop on a route (e.g., \"next stop for route X\", \"where does route Y go next\")\n- **track_bus**: User asks to track a specific bus by ID or get bus location (e.g., \"track bus BUS001\", \"where is bus X\", \"locate bus Y\")\n- **routes_between_stops**: User asks for routes or travel options between two specific stops (e.g., \"routes between X and Y\", \"how to travel from X to Y\", \"buses from X to Y\")\n\n**Known Locations (use coordinates when mentioned):**\n- Christ University: 12.9344, 77.6067\n- Koramangala: 12.9352, 77.6245\n- Indiranagar: 12.9719, 77.6412\n- Whitefield: 12.9698, 77.7500\n- Electronic City: 12.8456, 77.6601\n- MG Road: 12.9716, 77.6046\n- Brigade Road: 12.9716, 77.6173\n- Jayanagar: 12.9279, 77.5937\n\n**Examples:**\n\nUser: \"Which buses are coming to stop STOP001?\"\n```json\n{\n  \"intent\": \"buses_for_stop\",\n  \"params\": {\n    \"stopId\": \"STOP001\"\n  },\n  \"reply\": \"Let me check which buses are arriving at stop STOP001.\"\n}\n```\n\nUser: \"Which is the nearest bus to S1 stop?\"\n```json\n{\n  \"intent\": \"buses_for_stop\",\n  \"params\": {\n    \"stopId\": \"S1\"\n  },\n  \"reply\": \"Let me check which buses are coming to stop S1.\"\n}\n```\n\nUser: \"Find bus stops near me\"\n```json\n{\n  \"intent\": \"nearest_stops\",\n  \"params\": {\n    \"userLat\": 12.9716,\n    \"userLon\": 77.5946\n  },\n  \"reply\": \"I'll find the nearest bus stops for you.\"\n}\n```\n\nUser: \"Tell me nearest bus stops from Christ University\"\n```json\n{\n  \"intent\": \"nearest_stops\",\n  \"params\": {\n    \"userLat\": 12.9344,\n    \"userLon\": 77.6067,\n    \"location\": \"Christ University\"\n  },\n  \"reply\": \"Finding nearest bus stops from Christ University.\"\n}\n```\n\nUser: \"Bus stops near Koramangala\"\n```json\n{\n  \"intent\": \"nearest_stops\",\n  \"params\": {\n    \"userLat\": 12.9352,\n    \"userLon\": 77.6245,\n    \"location\": \"Koramangala\"\n  },\n  \"reply\": \"Finding nearest bus stops near Koramangala.\"\n}\n```\n\nUser: \"Find stops near some random location\"\n```json\n{\n  \"intent\": \"nearest_stops\",\n  \"params\": {\n    \"location\": \"some random location\"\n  },\n  \"reply\": \"I'll help you find bus stops near that location.\"\n}\n```\n\nUser: \"What's the next stop for route 42?\"\n```json\n{\n  \"intent\": \"next_stop\",\n  \"params\": {\n    \"routeNO\": \"42\",\n    \"currStopIndex\": 0,\n    \"nextStopIndex\": 1\n  },\n  \"reply\": \"Finding the next stop for route 42.\"\n}\n```\n\nUser: \"Track bus BUS001\"\n```json\n{\n  \"intent\": \"track_bus\",\n  \"params\": {\n    \"busID\": \"BUS001\"\n  },\n  \"reply\": \"Tracking bus BUS001.\"\n}\n```\n\nUser: \"Where is bus BUS123 on route 45?\"\n```json\n{\n  \"intent\": \"track_bus\",\n  \"params\": {\n    \"busID\": \"BUS123\",\n    \"routeNo\": \"45\"\n  },\n  \"reply\": \"Locating bus BUS123 on route 45.\"\n}\n```\n\nUser: \"Give me routes between S1 and S3\"\n```json\n{\n  \"intent\": \"routes_between_stops\",\n  \"params\": {\n    \"fromStopId\": \"S1\",\n    \"toStopId\": \"S3\"\n  },\n  \"reply\": \"Finding routes between S1 and S3.\"\n}\n```\n\nUser: \"How can I travel from S1 to S3?\"\n```json\n{\n  \"intent\": \"routes_between_stops\",\n  \"params\": {\n    \"fromStopId\": \"S1\",\n    \"toStopId\": \"S3\"\n  },\n  \"reply\": \"Finding travel options from S1 to S3.\"\n}\n```\n\nUser: \"Buses from STOP001 to STOP005\"\n```json\n{\n  \"intent\": \"routes_between_stops\",\n  \"params\": {\n    \"fromStopId\": \"STOP001\",\n    \"toStopId\": \"STOP005\"\n  },\n  \"reply\": \"Finding bus routes from STOP001 to STOP005.\"\n}\n```\n\nUser: \"What's the weather today?\"\n```json\n{\n  \"intent\": \"unknown\",\n  \"params\": {},\n  \"reply\": \"I can only help with bus tracking information.\"\n}\n```"
+                        }
+                    ]
+                },
+                "batching": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.chainLlm",
+            "typeVersion": 1.7,
+            "position": [
+                -1248,
+                480
+            ],
+            "id": "8c9cc425-b20a-4992-abdb-0329783357f2",
+            "name": "Basic LLM Chain"
+        },
+        {
+            "parameters": {
+                "rules": {
+                    "values": [
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": false,
+                                    "leftValue": "",
+                                    "typeValidation": "loose",
+                                    "version": 2
+                                },
+                                "conditions": [
+                                    {
+                                        "id": "f17ccf5f-9894-4e46-879d-45e8aa8261c0",
+                                        "leftValue": "={{ $json.intent }}",
+                                        "rightValue": "track_bus",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ],
+                                "combinator": "and"
+                            },
+                            "renameOutput": true,
+                            "outputKey": "Trackbus"
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": false,
+                                    "leftValue": "",
+                                    "typeValidation": "loose",
+                                    "version": 2
+                                },
+                                "conditions": [
+                                    {
+                                        "leftValue": "={{ $json.intent }}",
+                                        "rightValue": "nearest_stops",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        },
+                                        "id": "a01263f4-127b-4b29-bd8d-27a3aa290b3d"
+                                    }
+                                ],
+                                "combinator": "and"
+                            },
+                            "renameOutput": true,
+                            "outputKey": "NearestStops"
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": false,
+                                    "leftValue": "",
+                                    "typeValidation": "loose",
+                                    "version": 2
+                                },
+                                "conditions": [
+                                    {
+                                        "id": "4898ec3d-c56c-452a-89df-ffface30af7d",
+                                        "leftValue": "={{ $json.intent }}",
+                                        "rightValue": "=buses_for_stop",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals",
+                                            "name": "filter.operator.equals"
+                                        }
+                                    }
+                                ],
+                                "combinator": "and"
+                            },
+                            "renameOutput": true,
+                            "outputKey": "BusesForStop"
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": false,
+                                    "leftValue": "",
+                                    "typeValidation": "loose",
+                                    "version": 2
+                                },
+                                "conditions": [
+                                    {
+                                        "id": "6b45cd44-e9ba-4cff-86f9-1aa975bba27c",
+                                        "leftValue": "={{ $json.intent }}",
+                                        "rightValue": "next_stop",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals",
+                                            "name": "filter.operator.equals"
+                                        }
+                                    }
+                                ],
+                                "combinator": "and"
+                            },
+                            "renameOutput": true,
+                            "outputKey": "NEXTStop"
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": false,
+                                    "leftValue": "",
+                                    "typeValidation": "loose",
+                                    "version": 2
+                                },
+                                "conditions": [
+                                    {
+                                        "id": "7a14e466-43ab-4656-936c-7ec819983944",
+                                        "leftValue": "={{ $json.intent }}",
+                                        "rightValue": "unknown",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals",
+                                            "name": "filter.operator.equals"
+                                        }
+                                    }
+                                ],
+                                "combinator": "and"
+                            },
+                            "renameOutput": true,
+                            "outputKey": "Unknown"
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": false,
+                                    "leftValue": "",
+                                    "typeValidation": "loose",
+                                    "version": 2
+                                },
+                                "conditions": [
+                                    {
+                                        "id": "c860c185-c3bd-436d-a29e-9ea808039cc8",
+                                        "leftValue": "={{ $json.intent }}",
+                                        "rightValue": "routes_between_stops",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals",
+                                            "name": "filter.operator.equals"
+                                        }
+                                    }
+                                ],
+                                "combinator": "and"
+                            },
+                            "renameOutput": true,
+                            "outputKey": "getCommonRoutes"
+                        }
+                    ]
+                },
+                "looseTypeValidation": true,
+                "options": {
+                    "ignoreCase": true,
+                    "allMatchingOutputs": true
+                }
+            },
+            "type": "n8n-nodes-base.switch",
+            "typeVersion": 3.2,
+            "position": [
+                -672,
+                416
+            ],
+            "id": "8c48fea5-a46a-4eee-b205-5f71420f4a28",
+            "name": "Switch"
+        },
+        {
+            "parameters": {
+                "model": {
+                    "__rl": true,
+                    "mode": "list",
+                    "value": "gpt-4.1-mini"
+                },
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+            "typeVersion": 1.2,
+            "position": [
+                -1248,
+                704
+            ],
+            "id": "01724df6-69d9-49e4-a1f6-5959bf3f89e9",
+            "name": "OpenAI Chat Model1",
+            "credentials": {
+                "openAiApi": {
+                    "id": "QdnJAVf0XGSZFyBX",
+                    "name": "OpenAi account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "fc6f80b5-330c-48ae-953e-eba50442c70c",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 2.1,
+            "position": [
+                -1696,
+                480
+            ],
+            "id": "cb9e5117-c1a2-4070-89ca-72ffa6eeb843",
+            "name": "Webhook",
+            "webhookId": "fc6f80b5-330c-48ae-953e-eba50442c70c"
+        },
+        {
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "91f2d0cc-6b55-4ff0-b2f9-945463c76023",
+                            "name": "chatInput",
+                            "value": "={{ $json.body[\"SpeechResult\"] }}",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.4,
+            "position": [
+                -1472,
+                480
+            ],
+            "id": "288be9e4-b1cd-4494-8ecc-47d47bc15040",
+            "name": "Edit Fields1"
+        },
+        {
+            "parameters": {
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+            "typeVersion": 1,
+            "position": [
+                -1072,
+                736
+            ],
+            "id": "ae3afc2a-4612-42f8-8fc5-8d277dc22971",
+            "name": "Google Gemini Chat Model",
+            "credentials": {
+                "googlePalmApi": {
+                    "id": "edm5yXwWca2x8Vf5",
+                    "name": "Google Gemini(PaLM) Api account 2"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "jsCode": "// Parse the JSON from the text field\nconst textResponse = $input.first().json.text;\nconst parsedData = JSON.parse(textResponse);\n\nreturn [{\n  json: parsedData\n}];"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                -896,
+                480
+            ],
+            "id": "fb3d179c-528e-4f92-9a62-fb6a4bc36f5d",
+            "name": "Code in JavaScript"
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://rheumatoid-ringlike-al.ngrok-free.dev/getBusesForStop",
+                "sendQuery": true,
+                "queryParameters": {
+                    "parameters": [
+                        {
+                            "name": "={{ $json.params.stopId }}",
+                            "value": "={{ $json.params.stopId }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                0,
+                0
+            ],
+            "id": "9f83cfa4-bde7-4db2-97eb-9cbcaab2ff7e",
+            "name": "HTTP Request"
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://rheumatoid-ringlike-al.ngrok-free.dev/getBusesForStop",
+                "sendQuery": true,
+                "queryParameters": {
+                    "parameters": [
+                        {}
+                    ]
+                },
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "=Content-Type",
+                            "value": "=application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"stopId\": \"{{ $json.params.stopId }}\"\n}",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                0,
+                384
+            ],
+            "id": "d3f9e67e-986c-4b52-be45-c3eb21c586c5",
+            "name": "HTTP Request1",
+            "alwaysOutputData": true,
+            "retryOnFail": true,
+            "executeOnce": true
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://rheumatoid-ringlike-al.ngrok-free.dev/getNextStop",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"routeNO\": \"{{$json.params.routeNO}}\",\n  \"currStopIndex\": {{$json.params.currStopIndex}},\n  \"nextStopIndex\": {{$json.params.nextStopIndex}}\n}",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                0,
+                768
+            ],
+            "id": "65f7028b-60a8-4b66-85c4-0bb0c8e11f7e",
+            "name": "HTTP Request2"
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://rheumatoid-ringlike-al.ngrok-free.dev/getNearestBustops",
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"userLat\": {{ $json.userLat}},\n  \"userLon\": {{ $json.userLon }}\n}",
+                "options": {
+                    "response": {
+                        "response": {}
+                    }
+                }
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                0,
+                192
+            ],
+            "id": "3445450b-9ece-4260-ba69-ddf8320c5bf7",
+            "name": "HTTP Request3"
+        },
+        {
+            "parameters": {
+                "jsCode": "const geocodeResult = $input.first().json;\nlet lat, lon;\n\nif (geocodeResult.results && geocodeResult.results.length > 0) {\n  // Google Maps API format\n  lat = geocodeResult.results[0].geometry.location.lat;\n  lon = geocodeResult.results[0].geometry.location.lng;\n} else {\n  // Default to Bangalore center if geocoding fails\n  lat = 12.9469;\n  lon = 77.5714;\n}\n\n// Convert to 4 decimal places (number, not string)\nlat = parseFloat(lat.toFixed(4));\nlon = parseFloat(lon.toFixed(4));\n\nreturn [{\n  json: {\n    userLat: lat,\n    userLon: lon\n  }\n}];"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                -224,
+                192
+            ],
+            "id": "7d6b433c-78d5-4423-8cb9-4354a3f68a74",
+            "name": "Code in JavaScript1"
+        },
+        {
+            "parameters": {
+                "url": "=https://maps.googleapis.com/maps/api/geocode/json",
+                "sendQuery": true,
+                "queryParameters": {
+                    "parameters": [
+                        {
+                            "name": "address",
+                            "value": "={{ $json.params.location }}, Bangalore"
+                        },
+                        {
+                            "name": "key",
+                            "value": "AIzaSyBMHT8vIPCTBZjMUDHxR-JOONS9E38ufXQ"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                -448,
+                192
+            ],
+            "id": "4d215594-7720-4a4f-bf2f-67919ecba079",
+            "name": "HTTP Request4"
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://rheumatoid-ringlike-al.ngrok-free.dev/getCommonRoutes",
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "sourceId",
+                            "value": "={{ $json.params.fromStopId }}"
+                        },
+                        {
+                            "name": "destinationId",
+                            "value": "={{ $json.params.toStopId }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                0,
+                960
+            ],
+            "id": "ff6887cd-824c-4a53-9065-62a89513d211",
+            "name": "HTTP Request5"
+        },
+        {
+            "parameters": {
+                "hasOutputParser": true,
+                "messages": {
+                    "messageValues": [
+                        {
+                            "message": "=You are a helpful bus assistant. Convert the provided bus data into a natural, user-friendly response.\nData: {{ $json }}\nAnalyze the bus data and provide a helpful response. If it contains routes, stops, bus information, or travel details, present them in a conversational way. Be friendly and informative."
+                        }
+                    ]
+                },
+                "batching": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.chainLlm",
+            "typeVersion": 1.7,
+            "position": [
+                448,
+                480
+            ],
+            "id": "34653916-7b4d-4c10-996b-1cbd5c598f45",
+            "name": "Basic LLM Chain2"
+        },
+        {
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "7be53ca9-ac86-411a-a90d-8694fb4851f8",
+                            "name": "chatInput",
+                            "value": "={{ $json}}",
+                            "type": "object"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.4,
+            "position": [
+                224,
+                960
+            ],
+            "id": "86a32da7-5d01-42f8-8278-d2427ffdb4ec",
+            "name": "Edit Fields"
+        },
+        {
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "7be53ca9-ac86-411a-a90d-8694fb4851f8",
+                            "name": "chatInput",
+                            "value": "={{ $json}}",
+                            "type": "object"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.4,
+            "position": [
+                224,
+                768
+            ],
+            "id": "bd156608-3fe4-4508-9c97-7eedae8c01c4",
+            "name": "Edit Fields2"
+        },
+        {
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "7be53ca9-ac86-411a-a90d-8694fb4851f8",
+                            "name": "chatInput",
+                            "value": "={{ $json}}",
+                            "type": "object"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.4,
+            "position": [
+                224,
+                384
+            ],
+            "id": "b127ecee-623c-49c6-b6ef-8aeeadd86f77",
+            "name": "Edit Fields3"
+        },
+        {
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "7be53ca9-ac86-411a-a90d-8694fb4851f8",
+                            "name": "chatInput",
+                            "value": "={{ $json}}",
+                            "type": "object"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.4,
+            "position": [
+                224,
+                192
+            ],
+            "id": "8cae82fd-8f99-4792-a691-c2f1f3ac2b07",
+            "name": "Edit Fields4"
+        },
+        {
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "7be53ca9-ac86-411a-a90d-8694fb4851f8",
+                            "name": "chatInput",
+                            "value": "={{ $json}}",
+                            "type": "object"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.4,
+            "position": [
+                224,
+                0
+            ],
+            "id": "3d96d83a-7016-4d01-8965-5aaf87838a05",
+            "name": "Edit Fields5"
+        },
+        {
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "7be53ca9-ac86-411a-a90d-8694fb4851f8",
+                            "name": "chatInput",
+                            "value": "={{ $json}}",
+                            "type": "object"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.4,
+            "position": [
+                224,
+                576
+            ],
+            "id": "ee471cfe-cfc1-4fb3-876e-8f265773b025",
+            "name": "Edit Fields6"
+        },
+        {
+            "parameters": {
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+            "typeVersion": 1,
+            "position": [
+                560,
+                752
+            ],
+            "id": "ee7980e1-2cca-4f60-a87f-f08081ecd91a",
+            "name": "Google Gemini Chat Model1",
+            "credentials": {
+                "googlePalmApi": {
+                    "id": "edm5yXwWca2x8Vf5",
+                    "name": "Google Gemini(PaLM) Api account 2"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://anandraut.app.n8n.cloud/webhook/response",
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "text",
+                            "value": "={{$json.text}}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                800,
+                480
+            ],
+            "id": "daca1790-8ade-4c41-b535-56e739e986df",
+            "name": "HTTP Request6"
+        }
+    ],
+    "pinData": {},
+    "connections": {
+        "OpenAI Chat Model1": {
+            "ai_languageModel": [
+                [
+                    {
+                        "node": "Basic LLM Chain",
+                        "type": "ai_languageModel",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "Edit Fields1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Edit Fields1": {
+            "main": [
+                [
+                    {
+                        "node": "Basic LLM Chain",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Google Gemini Chat Model": {
+            "ai_languageModel": [
+                [
+                    {
+                        "node": "Basic LLM Chain",
+                        "type": "ai_languageModel",
+                        "index": 1
+                    }
+                ]
+            ]
+        },
+        "Basic LLM Chain": {
+            "main": [
+                [
+                    {
+                        "node": "Code in JavaScript",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Switch": {
+            "main": [
+                [
+                    {
+                        "node": "HTTP Request",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "HTTP Request4",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "HTTP Request1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "HTTP Request2",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Edit Fields6",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "HTTP Request5",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Code in JavaScript": {
+            "main": [
+                [
+                    {
+                        "node": "Switch",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Code in JavaScript1": {
+            "main": [
+                [
+                    {
+                        "node": "HTTP Request3",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "HTTP Request4": {
+            "main": [
+                [
+                    {
+                        "node": "Code in JavaScript1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "HTTP Request3": {
+            "main": [
+                [
+                    {
+                        "node": "Edit Fields4",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "HTTP Request2": {
+            "main": [
+                [
+                    {
+                        "node": "Edit Fields2",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "HTTP Request1": {
+            "main": [
+                [
+                    {
+                        "node": "Edit Fields3",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "HTTP Request5": {
+            "main": [
+                [
+                    {
+                        "node": "Edit Fields",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "HTTP Request": {
+            "main": [
+                [
+                    {
+                        "node": "Edit Fields5",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Edit Fields": {
+            "main": [
+                [
+                    {
+                        "node": "Basic LLM Chain2",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Edit Fields2": {
+            "main": [
+                [
+                    {
+                        "node": "Basic LLM Chain2",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Edit Fields3": {
+            "main": [
+                [
+                    {
+                        "node": "Basic LLM Chain2",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Edit Fields4": {
+            "main": [
+                [
+                    {
+                        "node": "Basic LLM Chain2",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Edit Fields5": {
+            "main": [
+                [
+                    {
+                        "node": "Basic LLM Chain2",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Edit Fields6": {
+            "main": [
+                [
+                    {
+                        "node": "Basic LLM Chain2",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Google Gemini Chat Model1": {
+            "ai_languageModel": [
+                [
+                    {
+                        "node": "Basic LLM Chain2",
+                        "type": "ai_languageModel",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Basic LLM Chain2": {
+            "main": [
+                [
+                    {
+                        "node": "HTTP Request6",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "active": true,
+    "settings": {
+        "executionOrder": "v1"
+    },
+    "versionId": "9e8b94ab-23e4-405a-b573-e69e15fdcd64",
+    "meta": {
+        "templateCredsSetupCompleted": true,
+        "instanceId": "cc113a5d183f5fe83f07aca5dccc7087504cce398a38caca85ffaf940f1f6d12"
+    },
+    "id": "kmbIWbIOT8w2plOi",
+    "tags": []
+}
