@@ -277,6 +277,10 @@ All endpoints are protected by rate limiting:
 
 ## Architecture
 
+### AI Voice Assistant Pipeline (n8n)
+
+![n8n AI Pipeline](./n8n-pipeline.png)
+
 ### System Components
 - **Express Server**: RESTful API endpoints
 - **MongoDB**: Persistent storage with geospatial indexing
@@ -342,6 +346,17 @@ This project is licensed under the MIT License.
 ## Support
 
 For support and questions, please open an issue in the repository.
+
+---
+
+## Resume Highlights
+
+**1Stop** | TypeScript, React Native, Node.js, MongoDB, Redis, n8n, OpenAI, Google Gemini
+
+- Built an AI-powered voice assistant for bus tracking using an n8n automation pipeline — speech input is classified into structured intents (`track_bus`, `nearest_stops`, `routes_between_stops`, etc.) via a GPT-4.1-mini + Gemini fallback LLM chain, which dispatches to the appropriate backend API and returns a natural language response.
+- Architected a full-stack sustainable transport platform with real-time bus/metro schedule data, ticket booking, and crowd density feeds via a Node.js + TypeScript backend.
+- Implemented Redis caching for transit schedule data and session state, reducing Google API calls and improving response latency.
+- Integrated Google Geocoding API to resolve place names to coordinates within the AI pipeline, enabling queries like "stops near Koramangala" without requiring users to provide GPS data manually.
 
 ---
 
